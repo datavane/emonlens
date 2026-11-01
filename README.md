@@ -1,6 +1,7 @@
 <h1 align="center">
-  <img src="docs/assets/emonlens-logo.png" alt="EmonLens" height="48" />
+  <img src="docs/assets/emonlens-logo.png" height="150" />
 </h1>
+
 
 <p align="center">
   <b>Agent Trust 可信观测平台</b><br/>

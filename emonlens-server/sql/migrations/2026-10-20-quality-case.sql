@@ -1,0 +1,25 @@
+-- 质量问题回归闭环；apply-once: 2026-10-20-quality-case
+CREATE TABLE IF NOT EXISTS et_quality_case (
+    id                   VARCHAR(36) PRIMARY KEY,
+    workspace_id         VARCHAR(64) NOT NULL,
+    dataset_id           VARCHAR(36),
+    source_run_id        VARCHAR(36),
+    source_item_id       VARCHAR(36),
+    agent_key            VARCHAR(200),
+    title                VARCHAR(300) NOT NULL,
+    phenomenon           TEXT NOT NULL,
+    evidence_json        TEXT,
+    root_cause_category  VARCHAR(40),
+    owner                VARCHAR(100),
+    status               VARCHAR(24) NOT NULL,
+    fix_fingerprint      VARCHAR(128),
+    fix_note             TEXT,
+    regression_run_id    VARCHAR(36),
+    verified_by          VARCHAR(64),
+    verified_at          DATETIME,
+    created_by           VARCHAR(64),
+    created_at           DATETIME     NOT NULL,
+    updated_at           DATETIME     NOT NULL,
+    KEY idx_quality_case_run (workspace_id, source_run_id),
+    KEY idx_quality_case_status (workspace_id, status)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;

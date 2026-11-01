@@ -1,0 +1,37 @@
+package io.emonlens.server.storage.entity;
+
+import java.time.LocalDateTime;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+
+import lombok.Data;
+
+@Data
+@TableName("et_notify_template")
+public class NotifyTemplateEntity {
+
+    public static final String STATUS_ACTIVE = "ACTIVE";
+
+    @TableId(type = IdType.ASSIGN_UUID)
+    private String id;
+
+    private String workspaceId;
+
+    private String code;
+
+    private String name;
+
+    private String channel;
+
+    private String subject;
+
+    private String content;
+
+    private String status;
+
+    private LocalDateTime createdAt;
+
+    private LocalDateTime updatedAt;
+}

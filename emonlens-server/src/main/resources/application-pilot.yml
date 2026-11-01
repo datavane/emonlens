@@ -1,0 +1,16 @@
+# =====================================================================
+# 用户试点 profile（与 prod 叠加使用：SPRING_PROFILES_ACTIVE=prod,pilot）
+#
+# 目的：把试跑限制在“单批 ≤20 条、一个评估器、同一时刻一个运行”，
+# 并关闭自动 LLM 评估，避免与手动试跑同时产生费用。
+# 不改变其他环境的既有配置：只有显式启用本 profile 才生效。
+# =====================================================================
+
+emonlens:
+  dataset-run:
+    # 旧同步入口停止接受新评测，明确指向 POST /api/v1/datasets/{id}/runs/async
+    pilot-mode: true
+  eval:
+    # 试点环境关闭自动 LLM 评估；手动数据集运行不受影响
+    auto-run-enabled: false
+    default-rate: 0

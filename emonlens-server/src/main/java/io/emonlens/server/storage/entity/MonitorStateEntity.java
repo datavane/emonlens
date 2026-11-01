@@ -1,0 +1,28 @@
+package io.emonlens.server.storage.entity;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+
+import lombok.Data;
+
+@Data
+@TableName("et_monitor_state")
+public class MonitorStateEntity {
+
+    @TableId(type = IdType.ASSIGN_UUID)
+    private String id;
+
+    private String monitorId;
+
+    private LocalDateTime windowStart;
+
+    private Integer consecutiveHits;
+
+    private BigDecimal prevValue;
+
+    private LocalDateTime lastEvalAt;
+}

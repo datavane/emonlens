@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "emonlens"
+version = "0.1.0"
+description = "EmonLens Agent Observability SDK — trace your AI agents with zero config"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Apache-2.0" }
+authors = [{ name = "EmonLens" }]
+keywords = ["llm", "observability", "tracing", "agents", "evaluation"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Topic :: Software Development :: Libraries",
+]
+# 零第三方依赖：传输层基于 urllib 标准库
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[project.scripts]
+emonlens = "emonlens.cli:main"
+emonlens-codex-hooks = "emonlens.codex_hooks:main"
+emonlens-claude-hooks = "emonlens.claude_hooks:main"
+emonlens-zcode-hooks = "emonlens.zcode_hooks:main"
+emonlens-codex-setup = "emonlens.setup_agents:main_codex"
+emonlens-claude-setup = "emonlens.setup_agents:main_claude"
+emonlens-zcode-setup = "emonlens.setup_agents:main_zcode"
+
+[tool.setuptools.packages.find]
+where = ["src"]

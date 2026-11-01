@@ -1,0 +1,101 @@
+package io.emonlens.server.engine.eval;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.stereotype.Service;
+
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.emonlens.server.config.EmonLensProperties;
+import io.emonlens.server.config.SysSettingService;
+import io.emonlens.server.engine.event.EventService;
+import io.emonlens.server.engine.event.EventType;
+import io.emonlens.server.storage.entity.EvalResultEntity;
+import io.emonlens.server.storage.entity.EvaluatorEntity;
+import io.emonlens.server.storage.entity.TraceSummaryEntity;
+import io.emonlens.server.storage.mapper.EvalResultMapper;
+import io.emonlens.server.storage.mapper.TraceSummaryMapper;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * trace 完成后的自动评估编排：采样决策 -> 逐个启用 evaluator 执行 -> 落库 -> 事件（EVAL_RESULT_READY + SCORE_CHANGED）。
+ * 自动评估可经 emonlens.eval.auto-run-enabled 关闭；手动评估走 /evaluators/{id}/test 与 /evaluations/run。
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class EvaluationAutoRunService {
+
+    private final EmonLensProperties properties;
+    private final SysSettingService sysSettingService;
+    private final SamplingService samplingService;
+    private final EvaluatorService evaluatorService;
+    private final EvaluationRunService evaluationRunService;
+    private final TraceSummaryMapper traceSummaryMapper;
+    private final EvalResultMapper evalResultMapper;
+    private final EventService eventService;
+    private final ObjectMapper objectMapper;
+
+    public void runForTrace(String workspaceId, String traceId) {
+        // 试点环境强制关闭自动评估：即使 DB 运行时设置仍为 true，也不能与手动试跑同时产生费用
+        if (properties.getDatasetRun().isPilotMode()) {
+            return;
+        }
+        SysSettingService.EvalSampling db = sysSettingService.getEvalSampling();
+        boolean enabled = db != null && db.getAutoRunEnabled() != null ? db.getAutoRunEnabled() : properties.getEval().isAutoRunEnabled();
+        if (!enabled) {
+            return;
+        }
+        TraceSummaryEntity summary = traceSummaryMapper.selectOne(Wrappers.<TraceSummaryEntity>lambdaQuery()
+                .eq(TraceSummaryEntity::getWorkspaceId, workspaceId)
+                .eq(TraceSummaryEntity::getTraceId, traceId));
+        if (summary == null || !TraceSummaryEntity.STATUS_COMPLETED.equals(summary.getStatus())) {
+            return;
+        }
+        if (!samplingService.shouldAutoEvaluate(summary)) {
+            return;
+        }
+        List<EvaluatorEntity> evaluators = evaluatorService.listEnabled(workspaceId);
+        boolean anyResult = false;
+        for (EvaluatorEntity evaluator : evaluators) {
+            try {
+                int attempt = nextAttempt(evaluator.getId(), traceId);
+                EvalResultEntity result = evaluationRunService.evaluate(evaluator, traceId, attempt, true);
+                anyResult = true;
+                log.info("auto eval done, evaluator={}, trace={}, label={}",
+                        evaluator.getEvaluatorKey(), traceId, result.getLabel());
+            } catch (Exception e) {
+                log.error("auto eval failed, evaluator={}, trace={}", evaluator.getId(), traceId, e);
+            }
+        }
+        if (anyResult) {
+            // traceId/agentKey 来自上报数据，必须序列化转义
+            Map<String, Object> fields = new LinkedHashMap<>();
+            fields.put("traceId", traceId);
+            fields.put("agentKey", summary.getAgentKey());
+            String payload;
+            try {
+                payload = objectMapper.writeValueAsString(fields);
+            } catch (Exception e) {
+                payload = "{}";
+            }
+            eventService.enqueue(EventType.EVAL_RESULT_READY, workspaceId, summary.getAgentKey(), payload);
+            eventService.enqueue(EventType.SCORE_CHANGED, workspaceId, summary.getAgentKey(), payload);
+        }
+    }
+
+    /** 同 evaluator+trace 的下一次尝试序号（受 maxAttempt 封顶） */
+    private int nextAttempt(String evaluatorId, String traceId) {
+        EvalResultEntity last = evalResultMapper.selectOne(Wrappers.<EvalResultEntity>lambdaQuery()
+                .eq(EvalResultEntity::getEvaluatorId, evaluatorId)
+                .eq(EvalResultEntity::getTraceId, traceId)
+                .orderByDesc(EvalResultEntity::getAttempt)
+                .last("LIMIT 1"));
+        return last == null ? 1 : Math.min(last.getAttempt() + 1, properties.getEval().getMaxAttempt());
+    }
+}

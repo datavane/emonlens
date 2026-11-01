@@ -1,0 +1,40 @@
+# ---- Java / Maven ----
+target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+.flattened-pom.xml
+
+# ---- IDE / OS ----
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# ---- 日志 / 环境 ----
+logs/
+*.log
+.env
+
+# ---- 前端 ----
+node_modules/
+emonlens-ui/dist/
+# 内嵌 UI 为构建产物（make ui / Docker ui 阶段重新生成），不入库
+emonlens-server/src/main/resources/static/
+
+# ---- Python SDK ----
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+emonlens-sdk-python/build/
+emonlens-sdk-python/dist/
+emonlens-sdk-python/.pytest_cache/
+emonlens-sdk-python/.venv/
+
+# ---- 工作目录残留 ----
+/emonlens-server-*.jar
+artifacts/
+.orchelon
+design
+emonlens-ui/.impeccable

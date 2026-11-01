@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.7.18</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>io.emonlens</groupId>
+    <artifactId>emonlens</artifactId>
+    <version>0.1.0</version>
+    <packaging>pom</packaging>
+    <name>emonlens</name>
+    <description>EmonLens - Agent Trust Core Engine（common 通用契约 + server 单部署单元）</description>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <modules>
+        <module>emonlens-common</module>
+        <module>emonlens-server</module>
+    </modules>
+
+    <properties>
+        <java.version>11</java.version>
+        <mybatis-plus.version>3.5.8</mybatis-plus.version>
+        <lombok.version>1.18.34</lombok.version>
+        <mysql.version>8.4.0</mysql.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.emonlens</groupId>
+                <artifactId>emonlens-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <profiles>
+        <!-- 发布分发件：mvn -Prelease package → emonlens-dist/target/emonlens-<version>-bin.tar.gz
+             日常 test/build 不带该 profile，避免无关的 assembly 开销 -->
+        <profile>
+            <id>release</id>
+            <modules>
+                <module>emonlens-dist</module>
+            </modules>
+        </profile>
+    </profiles>
+</project>

@@ -1,0 +1,84 @@
+# =====================================================================
+# EmonLens 生产部署（单机 compose）
+#   cp .env.example .env   # 修改必填项（所有 :? 变量为必填）
+#   docker compose up -d --build
+#
+# 说明：下面 ${VAR:?...} 只在校验"启动"时才需要 .env。若只想看状态/日志/
+# 停止栈（ps / logs / down），没必要为了填凭据而建 .env，用 make ps / make logs /
+# make down 即可——这三个目标会自动以占位凭据完成插值（scripts/compose.sh）。
+# 涉及启停（up / restart）时必须提供真实 .env，防止用公开占位值拉起服务。
+# =====================================================================
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: emonlens-mysql
+    environment:
+      MYSQL_DATABASE: emonlens
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?请在 .env 设置 MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${EMONLENS_DB_USER:-emonlens}
+      MYSQL_PASSWORD: ${EMONLENS_DB_PASSWORD:?请在 .env 设置 EMONLENS_DB_PASSWORD}
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --max_connections=500
+    volumes:
+      - emonlens-mysql-data:/var/lib/mysql
+      # 首次启动自动执行建库 + 种子数据（admin 账号会在应用首次启动时强制轮换密码）
+      - ./emonlens-server/sql/emonlens-mysql.sql:/docker-entrypoint-initdb.d/emonlens-mysql.sql:ro
+    healthcheck:
+      # 用 CMD-SHELL 展开容器内环境变量；mysqladmin ping 在鉴权失败时仍返回 0，改用 SELECT 1 验证凭据
+      test: ["CMD-SHELL", "mysql -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" -e 'SELECT 1' >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+    # 如需宿主机直连数据库调试，放开下面两行（生产建议不对外暴露）
+    # ports:
+    #   - "127.0.0.1:33061:3306"
+
+  emonlens:
+    build: .
+    image: emonlens/server:latest
+    container_name: emonlens-server
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      TZ: Asia/Shanghai
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/emonlens?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      EMONLENS_DB_USER: ${EMONLENS_DB_USER:-emonlens}
+      EMONLENS_DB_PASSWORD: ${EMONLENS_DB_PASSWORD:?请在 .env 设置 EMONLENS_DB_PASSWORD}
+      # ---- 以下为必填安全凭据 ----
+      EMONLENS_JWT_SECRET: ${EMONLENS_JWT_SECRET:?请在 .env 设置 EMONLENS_JWT_SECRET（>=16 字符随机串）}
+      EMONLENS_INGEST_KEY: ${EMONLENS_INGEST_KEY:?请在 .env 设置 EMONLENS_INGEST_KEY（SDK 数据面凭据）}
+      EMONLENS_ADMIN_PASSWORD: ${EMONLENS_ADMIN_PASSWORD:?请在 .env 设置 EMONLENS_ADMIN_PASSWORD（首次启动自动轮换 admin 初始密码）}
+      # ---- 可选 ----
+      EMONLENS_RATE_LIMIT: ${EMONLENS_RATE_LIMIT:-600}
+      EMONLENS_INGEST_RATE_LIMIT: ${EMONLENS_INGEST_RATE_LIMIT:-20000}
+      EMONLENS_TRUST_XFF: ${EMONLENS_TRUST_XFF:-false}
+      EMONLENS_LOG_LEVEL: ${EMONLENS_LOG_LEVEL:-INFO}
+      EMONLENS_LOG_FILE: ${EMONLENS_LOG_FILE:-/app/logs/emonlens.log}
+      # worker=false 时该实例只收不落、停机才刷盘（kill -9 丢队列），独立 worker 拆分部署才改
+      EMONLENS_WORKER_ENABLED: ${EMONLENS_WORKER_ENABLED:-true}
+      EMONLENS_EVAL_CACHE_ENABLED: ${EMONLENS_EVAL_CACHE_ENABLED:-false}
+      EMONLENS_DATASET_SYNTHESIS_ENABLED: ${EMONLENS_DATASET_SYNTHESIS_ENABLED:-false}
+      JAVA_OPTS: ${JAVA_OPTS:--Xms512m -Xmx1024m}
+    ports:
+      - "${EMONLENS_BIND:-127.0.0.1}:${EMONLENS_PORT:-8300}:8300"
+    volumes:
+      - emonlens-logs:/app/logs
+    healthcheck:
+      # 容器内无 curl：bash /dev/tcp 直连本机 8300 并断言 actuator/health 返回 200
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8300 && printf \"GET /actuator/health HTTP/1.0\\r\\n\\r\\n\" >&3 && grep -q \"200\" <&3'"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    restart: unless-stopped
+
+volumes:
+  emonlens-mysql-data:
+  emonlens-logs:

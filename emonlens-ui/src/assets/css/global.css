@@ -1,0 +1,504 @@
+html,
+body,
+#app {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* ===== 设计令牌（参考 Consilens UI：Reafuture 靛蓝主色 + 冷调中性色）=====
+   全站颜色只允许引用这里或 theme.js，不允许页面硬编码。
+   亮色：浅灰外壳 + 纯白面板；暗色：板岩外壳 + 深蓝黑面板。 */
+:root {
+  /* 外壳（侧栏/顶栏）与面板 */
+  --bg-page: #F3F4F6;
+  --bg-surface: #FFFFFF;
+  --bg-subtle: #F7F8FA;
+  --bg-chrome: #F3F4F6;
+  --bg-content: #FFFFFF;
+  --bg-chrome-hover: #ECEEF1;
+  --bg-chrome-active: #E2E5E9;
+
+  /* 描边与分隔线 */
+  --border: #E0E3E8;
+  --border-strong: #D2D7DD;
+
+  /* 文字 */
+  --text-primary: #1F2329;
+  --text-secondary: #5A6169;
+  --text-muted: #6B7178;
+
+  /* 主色与语义色 */
+  --primary: #3B77F1;
+  --primary-hover: #2F63D6;
+  --primary-bg: #E3EDF7;
+  --error: #C63F2C;
+  --error-bg: #FDECE9;
+  --error-border: rgba(198, 63, 44, 0.35);
+  --warn: #A87C1F;
+  --warn-bg: #FBF3E2;
+  --warn-border: rgba(168, 124, 31, 0.35);
+  --success: #1B8A4E;
+  --llm: #7B6FD0;
+  --accent-amber: #D9A93B;
+
+  /* 代码块 / 编辑器（亮色主题用浅色代码面） */
+  --code-bg: #FAFBFC;
+  --code-chrome: #F1F3F5;
+  --code-border: #E3E6EA;
+  --code-text: #24292F;
+  --code-muted: #6B7178;
+
+  /* 差异对比 */
+  --diff-old-text: #C63F2C;
+  --diff-old-bg: rgba(232, 84, 63, 0.08);
+  --diff-new-text: #1B8A4E;
+  --diff-new-bg: rgba(34, 164, 93, 0.08);
+
+  --scrollbar-thumb: rgba(0, 0, 0, 0.18);
+  --overlay: rgba(15, 22, 28, 0.35);
+
+  --radius-ctl: 8px;
+  --radius-card: 10px;
+
+  /* 兼容旧 scoped 样式的别名（引用令牌，暗色下自动跟随） */
+  --primary-color: var(--primary);
+  --line-color: var(--border);
+  --line: var(--border);
+  --page-bg: var(--bg-page);
+  --text-color: var(--text-primary);
+  --text-color-secondary: var(--text-secondary);
+  --text-color-tertiary: var(--text-muted);
+  --red: var(--error);
+  --green: var(--success);
+  --orange: var(--warn);
+}
+
+/* 暗色模式：对齐 IntelliJ 新 UI 三层（外壳 2B2D30 / 内容 1E1F22 / 结构线 393B40） */
+html.dark {
+  --bg-page: #2B2D30;
+  --bg-surface: #1E1F22;
+  --bg-subtle: #2B2D30;
+  --bg-chrome: #2B2D30;
+  --bg-content: #1E1F22;
+  --bg-chrome-hover: #393B40;
+  --bg-chrome-active: #43474E;
+
+  --border: #393B40;
+  --border-strong: #4A4D52;
+
+  --text-primary: #DFE1E5;
+  --text-secondary: #BCBEC4;
+  --text-muted: #9EA0A8;
+
+  --primary: #3B77F1;
+  --primary-hover: #3D74E8;
+  --primary-bg: #22305C;
+  /* 语义底色必须跟着翻转：否则 tint 块（key 明文、错误提示）在深色下是浅底+浅字 */
+  --error: #E8705C;
+  --error-bg: rgba(232, 84, 63, 0.16);
+  --error-border: rgba(232, 84, 63, 0.45);
+  --warn: #D9A93B;
+  --warn-bg: rgba(217, 169, 59, 0.14);
+  --warn-border: rgba(217, 169, 59, 0.45);
+  --success: #34A853;
+  --llm: #7B6FD0;
+  --accent-amber: #D9A93B;
+
+  --code-bg: #303236;
+  --code-chrome: #2B2D30;
+  --code-border: #393B40;
+  --code-text: #DFE1E5;
+  --code-muted: #8C9197;
+
+  --diff-old-text: #F08171;
+  --diff-old-bg: rgba(232, 84, 63, 0.18);
+  --diff-new-text: #4FD18B;
+  --diff-new-bg: rgba(52, 168, 83, 0.18);
+
+  --scrollbar-thumb: rgba(255, 255, 255, 0.16);
+  --overlay: rgba(0, 0, 0, 0.55);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  color: var(--text-primary);
+  font: 13px/1.5 Inter, "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-feature-settings: "cv11";
+  -webkit-font-smoothing: antialiased;
+}
+
+p { margin: 0; padding: 0; }
+
+.flex { display: flex; }
+.flex-ac { display: flex; align-items: center; }
+.flex-between { display: flex; align-items: center; justify-content: space-between; }
+.flex-end { display: flex; justify-content: flex-end; }
+.flex-c { display: flex; flex-direction: column; }
+.flex-1 { flex: 1; min-height: 0; }
+.w-100 { width: 100%; }
+.h-100 { height: 100%; }
+.mt-8 { margin-top: 8px; }
+.mt-12 { margin-top: 12px; }
+.mt-16 { margin-top: 16px; }
+.mb-8 { margin-bottom: 8px; }
+.mb-16 { margin-bottom: 16px; }
+.ml-8 { margin-left: 8px; }
+.ml-10 { margin-left: 10px; }
+.ml-16 { margin-left: 16px; }
+.overflow-auto { overflow: auto; }
+
+.base-page {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-head {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.page-head > .head-right { margin-left: auto; }
+
+.page-title {
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.page-sub {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  line-height: 20px;
+}
+
+.filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+}
+
+.mt8 { margin-top: 8px !important; }
+.mt12 { margin-top: 12px !important; }
+.mt16 { margin-top: 16px !important; }
+
+/* 页面骨架：外层 .content 不滚动（每页高度锁死视口），滚动只发生在页面内部：
+   - .table-card：单表格列表页，表格在卡片内滚动（页头与筛选项始终固定）
+   - 其它多区块页：页面自身滚动，.page-head 吸顶固定 */
+.content > div,
+.content > div > .base-page {
+  min-height: 0;
+  height: 100%;
+}
+
+/* 页头 + 工具栏整体吸顶：二者包在同一容器里一起固定，下面内容滚动。
+   不用"分别 sticky + 魔法偏移"——页头在详情页可能因实体名换行而变高，
+   分别 sticky 会出现工具栏滑到页头上面（实测复现过）。 */
+.head-stack {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  background: var(--bg-content);
+  padding-bottom: 12px;   /* 与原工具栏卡片的 mt12 等价，且吸顶时背景连续无透光缝隙 */
+}
+.head-stack > .n-card { margin-top: 12px; }
+
+.base-page {
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+/* 吸顶由外层 .head-stack 统一承担；没有工具栏的页面 .page-head 自己吸顶 */
+.page-head {
+  min-height: var(--page-head-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+/* 页面级 Tab 头：左 Tab / 右操作，底部分隔线，整条吸顶 */
+.page-head--tabs {
+  min-height: 44px;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+}
+.page-head--tabs .head-left { align-items: center; min-width: 0; }
+.page-head--tabs .head-right { align-items: center; }
+.page-head--tabs .n-tabs-nav { margin-bottom: 0; }
+/* segment Tab 用固定导航宽度，避免整页容器把胶囊拉满；页面按 Tab 数量传 --tabs-nav-width */
+.tabs-segment-compact .n-tabs-nav { width: var(--tabs-nav-width, 330px); max-width: 100%; }
+.tabs-segment-compact .n-tabs-pane-wrapper { width: 100%; }
+/* 没有工具栏的页面：页头自己吸顶 */
+.base-page > .page-head {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  background: var(--bg-content);
+}
+/* 有工具栏的页面：页头+工具栏包在 .head-stack 里整体吸顶，内层不再单独 sticky */
+.head-stack .page-head { position: static; }
+
+/* 列表页工具栏：与调用链路页同一规范——左筛选、右操作，控件 gap 8 */
+.page-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 2px 0 0;
+}
+.page-toolbar .toolbar-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; flex: 1; min-width: 0; }
+.page-toolbar .toolbar-actions { display: flex; align-items: center; flex-shrink: 0; gap: 8px; margin-left: auto; }
+.page-toolbar .toolbar-actions .n-button + .n-button,
+.page-toolbar .toolbar-filters .n-button + .n-button { margin-left: 0; }
+/* 有 Tab 头时，工具栏与分隔线之间留 10px（无 Tab 时工具栏直接贴顶） */
+.page-head--tabs + .page-toolbar,
+.content.has-tabs .page-toolbar { padding-top: 10px; }
+/* 面板内工具栏（系统设置 / 用户与角色）：与下方表格卡片留 12px，和 .head-stack 间距一致 */
+.page-body .page-toolbar { margin-bottom: 12px; }
+
+/* 分组 Tab 头（数据集 / 洞察 / 工作台）：视觉规格与页面级 Tab 头一致 */
+.section-tabs {
+  flex: 0 0 auto;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-content);
+}
+.section-tabs .n-tabs-nav { margin-bottom: 0; }
+
+/* Tab 页内容区：撑满剩余高度，内容超出时整页滚动 */
+.page-body { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: auto; overscroll-behavior: contain; }
+
+/* 页头规范：左＝返回+实体标识，右＝筛选与操作（全站统一 gap 8） */
+.head-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.head-left .page-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.head-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+/* 页头按钮用 flex gap 控制间距，抵消全局相邻按钮 margin，避免 16px 双倍间距 */
+.head-left > .n-button + .n-button,
+.head-right > .n-button + .n-button,
+.filters .n-button + .n-button,
+.annotate-row .n-button + .n-button,
+.row-between .n-button + .n-button { margin-left: 0; }
+
+/* 页头名义高度：详情页的下层吸顶块用它做 top 偏移（页头是单行小按钮，不会换行，
+   实测 700~1200px 视口下恒为 34px）。改这里即可整体调整，两处不会失同步。 */
+:root { --page-head-h: 34px; }
+
+.n-card {
+  border-radius: var(--radius-card);
+}
+
+.n-card > .n-card__content {
+  min-width: 0;
+}
+
+/* 卡片头右侧操作：允许换行，避免窄宽度下按钮被卡片边界裁切 */
+.n-card-header__main { min-width: 0; }
+.n-card-header__extra { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; min-width: 0; }
+
+.n-data-table {
+  min-width: 0;
+}
+
+.n-data-table .n-data-table-th,
+.n-data-table .n-data-table-td {
+  white-space: nowrap;
+}
+
+.n-data-table .n-data-table-th {
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.n-button + .n-button {
+  margin-left: 8px;
+}
+
+.n-data-table .n-button + .n-button {
+  margin-left: 6px;
+}
+
+.n-modal-container .n-card {
+  max-width: calc(100vw - 32px);
+  border-radius: var(--radius-card);
+}
+
+.n-drawer-content .n-drawer-body-content-wrapper {
+  padding: 16px;
+}
+
+.table-card {
+  flex: 1;
+  min-height: 260px;
+}
+
+.table-card > .n-card__content {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-table {
+  flex: 1;
+  min-height: 220px;
+}
+
+.mono {
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+}
+
+.num {
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== 应用外壳 ===== */
+
+/* 侧边栏导航（展开：收起行高与组间距；折叠：完全交给 Naive 原生渲染） */
+.app-menu { padding: 2px 0 6px; }
+.app-menu .n-menu-item-group-title {
+  font-size: 11px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted) !important;
+  margin: 6px 0 4px;
+  padding: 0 12px !important;
+  box-sizing: border-box;
+}
+/* 展开态：32px 行高 + 上下 3px 外边距 → 行与行之间 6px 视觉空隙 */
+.app-menu:not(.n-menu--collapsed) .n-menu-item {
+  height: 32px;
+  margin: 3px 10px;
+  border-radius: var(--radius-ctl);
+}
+.app-menu:not(.n-menu--collapsed) .n-menu-item-content {
+  border-radius: var(--radius-ctl);
+  padding-left: 12px !important;
+}
+.app-menu .n-menu-item-content .n-icon { font-size: 16px; }
+.app-menu:not(.n-menu--collapsed) .n-menu-item-content-header { font-size: 13px; font-weight: 500; }
+/* 选中/hover：Langfuse 式灰底深字 */
+.app-menu:not(.n-menu--collapsed) .n-menu-item-content:hover {
+  background: var(--bg-chrome-hover) !important;
+  color: var(--text-primary) !important;
+}
+.app-menu:not(.n-menu--collapsed) .n-menu-item-content--selected,
+.app-menu:not(.n-menu--collapsed) .n-menu-item-content--selected:hover {
+  background: var(--bg-chrome-active) !important;
+  color: var(--text-primary) !important;
+}
+.app-menu:not(.n-menu--collapsed) .n-menu-item-content--selected .n-menu-item-content-header {
+  color: var(--text-primary) !important;
+  font-weight: 600;
+}
+.app-menu:not(.n-menu--collapsed) .n-menu-item-content--selected .n-icon {
+  color: var(--primary);
+}
+
+/* 折叠态：只留图标；Naive 原生居中 + tooltip，组标题与文字彻底隐藏 */
+.app-menu.n-menu--collapsed .n-menu-item {
+  margin: 3px 10px;
+}
+.app-menu.n-menu--collapsed .n-menu-item-group-title {
+  display: none !important;
+}
+.app-menu.n-menu--collapsed .n-menu-item-content-header {
+  display: none !important;
+}
+
+/* 卡片标题节奏 */
+.n-card > .n-card-header .n-card-header__title {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+/* 空态 */
+.n-empty__description { font-size: 12.5px; }
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-thumb { border-radius: 3px; background: var(--scrollbar-thumb); }
+::-webkit-scrollbar-track { background: transparent; }
+
+@media (max-width: 1100px) {
+  .card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+
+/* 嵌入式面板（Settings / Users & Roles 的 tab 内容） */
+.panel-root { width: 100%; height: 100%; min-height: 0; display: flex; flex-direction: column; }
+.panel-root .table-card { flex: 1; }
+.panel-card-title { font-size: 13.5px; font-weight: 600; }
+
+/* 表格内 h() 渲染的链接单元格（scoped 样式不生效，需全局） */
+.trace-link { cursor: pointer; color: var(--primary); text-decoration: underline; text-underline-offset: 2px; }
+.trace-link:hover { color: var(--primary-hover); }
+
+/* 告警/异常行严重级条纹（Dashboard 与 Alerts 共用；原定义在 Dashboard 的全局 style 里，
+   懒加载路由下直接打开 /alerts 时会缺失） */
+.sev-critical td:first-child { box-shadow: inset 3px 0 0 var(--error); }
+.sev-high td:first-child { box-shadow: inset 3px 0 0 var(--warn); }
+
+/* Tooltip：长文本不再撑成超宽单行（表格摘要/原因列），限制宽度并允许换行 */
+.n-tooltip { max-width: 520px; }
+.n-tooltip .n-popover__content { white-space: normal; overflow-wrap: anywhere; line-height: 1.5; }
+
+/* Tooltip 复用 Popover 皮肤，主题覆盖会互相覆盖成白底白字；用 !important 压过内联变量 */
+.n-tooltip { --n-color: #2B2D30 !important; --n-text-color: #FFFFFF !important; }
+.dark .n-tooltip { --n-color: #3A3D42 !important; --n-text-color: #F2F3F5 !important; }
+
+/* 暗色 segment Tab：胶囊自带的黑投影在深底上不可见，补一圈内描边强化「选中」轮廓 */
+.dark .n-tabs-tabs-capsule {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+/* ===== 过渡健壮性（后台标签页 / 低性能设备 / reduced-motion） =====
+   Vue Transition 的 enter-from/leave-active 类在后台标签页可能因 rAF 被节流而长期不推进，
+   表现为右侧抽屉停在视口外、下拉菜单不可见、表格 loading 残影。这里只兜底“起始帧”和
+   “离开中”两个状态，保证元素可用；前台正常动画不受影响。 */
+.n-drawer.slide-in-from-right-transition-enter-from,
+.n-drawer.slide-in-from-right-transition-leave-from {
+  transform: none !important;
+}
+.n-drawer.slide-in-from-right-transition-leave-active {
+  display: none !important;
+}
+.n-base-select-menu.fade-in-scale-up-transition-enter-from,
+.n-base-select-menu.fade-in-scale-up-transition-leave-from {
+  transform: none !important;
+  opacity: 1 !important;
+}
+.n-base-select-menu.fade-in-scale-up-transition-leave-active {
+  display: none !important;
+}
+.n-data-table-loading-wrapper.fade-in-scale-up-transition-leave-active,
+.n-data-table-loading-wrapper.fade-in-scale-up-transition-leave-from {
+  display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* 表格 loading 残影：enter-from 阶段应不可见；后台标签页 rAF 暂停时也不会留下半透明转圈 */
+.n-data-table-loading-wrapper.fade-in-scale-up-transition-enter-from {
+  opacity: 0 !important;
+}

@@ -1,0 +1,35 @@
+# =====================================================================
+# EmonLens 生产 profile（SPRING_PROFILES_ACTIVE=prod 时叠加在 application.yml 之上）
+# 所有敏感项均从环境变量读取，参考仓库根目录 .env.example
+# =====================================================================
+
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://${EMONLENS_DB_HOST:127.0.0.1}:${EMONLENS_DB_PORT:3306}/${EMONLENS_DB_NAME:emonlens}?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${EMONLENS_DB_USER:emonlens}
+    password: ${EMONLENS_DB_PASSWORD:}
+    hikari:
+      maximum-pool-size: ${EMONLENS_DB_POOL:20}
+      minimum-idle: 5
+      connection-timeout: 10000
+  sql:
+    init:
+      mode: never                     # schema 由 sql/emonlens-mysql.sql 一次性执行（compose 首次启动自动执行）
+
+emonlens:
+  security:
+    mode: prod                        # 启用 SecurityGateRunner 门禁（强制 jwt-secret / 非默认 admin 密码 / 非 dev ingest key）
+    jwt-secret: ${EMONLENS_JWT_SECRET:}
+    rate-limit-per-minute: ${EMONLENS_RATE_LIMIT:600}
+    trust-forwarded-for: ${EMONLENS_TRUST_XFF:false}   # 部署在可信反代（nginx 等）之后置 true
+    bootstrap-admin-password: ${EMONLENS_ADMIN_PASSWORD:}
+  ingest:
+    seed-key: ${EMONLENS_INGEST_KEY:} # 生产必须显式提供数据面凭据（dev-trust-key-001 会被门禁拒绝）
+    rate-limit-spans-per-minute: ${EMONLENS_INGEST_RATE_LIMIT:20000} # 每 workspace spans 额度；0=不限
+
+logging:
+  file:
+    name: ${EMONLENS_LOG_FILE:/app/logs/emonlens.log}
+  level:
+    io.emonlens: ${EMONLENS_LOG_LEVEL:INFO}

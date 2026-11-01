@@ -1,0 +1,48 @@
+-- Auto Rubrics 候选审计首切片；apply-once: 2026-10-20-auto-rubric-audit
+CREATE TABLE IF NOT EXISTS et_auto_rubric_run (
+    id              VARCHAR(36) PRIMARY KEY,
+    workspace_id    VARCHAR(64) NOT NULL,
+    dataset_id      VARCHAR(36) NOT NULL,
+    source_run_id   VARCHAR(36) NOT NULL,
+    status          VARCHAR(32) NOT NULL,
+    audit_split     VARCHAR(24) NOT NULL DEFAULT 'HOLDOUT',
+    audit_count     INT NOT NULL DEFAULT 0,
+    candidate_count INT NOT NULL DEFAULT 0,
+    proposed_count  INT NOT NULL DEFAULT 0,
+    max_judge_calls INT NOT NULL DEFAULT 200,
+    judge_calls     INT NOT NULL DEFAULT 0,
+    judge_model     VARCHAR(100),
+    config_json     TEXT,
+    created_by      VARCHAR(64),
+    created_at      DATETIME NOT NULL,
+    finished_at     DATETIME,
+    KEY idx_auto_rubric_run_dataset (workspace_id, dataset_id, created_at)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+CREATE TABLE IF NOT EXISTS et_auto_rubric_candidate (
+    id                VARCHAR(36) PRIMARY KEY,
+    workspace_id      VARCHAR(64) NOT NULL,
+    run_id            VARCHAR(36) NOT NULL,
+    rule_key          VARCHAR(100) NOT NULL,
+    rule_text         VARCHAR(2000) NOT NULL,
+    decision          VARCHAR(24) NOT NULL,
+    audit_count       INT NOT NULL DEFAULT 0,
+    violation_count   INT NOT NULL DEFAULT 0,
+    true_positive     INT NOT NULL DEFAULT 0,
+    false_positive    INT NOT NULL DEFAULT 0,
+    false_negative    INT NOT NULL DEFAULT 0,
+    true_negative     INT NOT NULL DEFAULT 0,
+    precision_rate    DOUBLE,
+    recall            DOUBLE,
+    support_count     INT NOT NULL DEFAULT 0,
+    violation_rate    DOUBLE,
+    min_precision     DOUBLE NOT NULL DEFAULT 0.8,
+    min_support       INT NOT NULL DEFAULT 3,
+    details_json      TEXT,
+    review_note       VARCHAR(1000),
+    reviewed_by       VARCHAR(64),
+    reviewed_at       DATETIME,
+    created_at        DATETIME NOT NULL,
+    UNIQUE KEY uk_auto_rubric_rule (run_id, rule_key),
+    KEY idx_auto_rubric_candidate_run (run_id)
+) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4;

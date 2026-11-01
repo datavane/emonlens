@@ -1,0 +1,18 @@
+# 构建上下文瘦身（context = 仓库根目录）
+.idea/
+.DS_Store
+.env
+.git/
+docs/
+*.docx
+.gitignore
+emonlens-ui/node_modules/
+emonlens-ui/dist/
+emonlens-server/target/
+emonlens-server/sql/
+emonlens-server/src/test/
+emonlens-server/src/main/resources/static/
+emonlens-common/target/
+emonlens-dist/
+emonlens-sdk-python/
+**/__pycache__/

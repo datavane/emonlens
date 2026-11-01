@@ -1,0 +1,4 @@
+Version: @project.version@
+Build Time (UTC): @maven.build.timestamp@
+Java: 11+
+Artifact: emonlens-server (Spring Boot fat jar, 内嵌控制台 UI)

@@ -1,0 +1,20 @@
+# =====================================================================
+# H2 演示 profile（SPRING_PROFILES_ACTIVE=demo 时叠加在 application.yml 之上）
+#
+# 用途：无 MySQL 的机器上本地体验。内存库，重启数据清空；admin/123456 登录
+# （dev 模式，SecurityGateRunner 不启用，启动日志会提示演示凭据）。
+# 标准运行形态（MySQL）不使用本 profile。
+# =====================================================================
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:emonlens;MODE=MySQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  sql:
+    init:
+      mode: always                     # 启动自动执行 schema-h2.sql（38 表 + 系统种子）
+      continue-on-error: false
+      platform: h2
+      schema-locations: classpath:schema-h2.sql

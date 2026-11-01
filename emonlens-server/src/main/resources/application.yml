@@ -1,0 +1,158 @@
+server:
+  port: 8300
+  compression:
+    # 内嵌 SPA 主包约 1.6MB，gzip 后 ~400KB；API JSON 响应同样受益
+    enabled: true
+    mime-types: application/json,application/javascript,text/javascript,text/css,text/html,text/plain,application/xml,application/x-ndjson
+    min-response-size: 1024
+
+spring:
+  application:
+    name: emonlens-server
+  web:
+    resources:
+      # SPA 入口禁止缓存（assets 带内容 hash 可长缓存），避免发版后浏览器用旧 index.html
+      cache.cachecontrol.no-cache: true
+  datasource:
+    # 默认 MySQL（标准运行形态）：本机 3306 的 emonlens 元数据库，schema 由 sql/emonlens-mysql.sql 一次性执行。
+    # 口令不落仓库：用环境变量注入 SPRING_DATASOURCE_PASSWORD（compose / tar.gz / systemd 均如此）；
+    # 本地开发请显式设置该变量，默认留空可避免把机器口令提交进仓库。
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/emonlens?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:com.mysql.cj.jdbc.Driver}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+  sql:
+    init:
+      # MySQL：schema 外部一次性执行（mysql -u<user> -p emonlens < emonlens-server/sql/emonlens-mysql.sql）
+      # H2 演示模式：SPRING_PROFILES_ACTIVE=demo 时覆盖为 always，自动执行 schema-h2.sql（38 表 + 种子，内存库）
+      mode: ${SPRING_SQL_INIT_MODE:never}
+      continue-on-error: false
+  jackson:
+    default-property-inclusion: non_null
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    banner: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # 仅暴露健康检查（无鉴权）；info/metrics 含平台内部信息，禁止对外
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+emonlens:
+  instance-id: ${EMONLENS_INSTANCE_ID:}    # 缺省启动时生成 UUID，用于事件认领 claim_owner
+  worker:
+    enabled: true                          # 独立部署 api 实例时置 false
+  ingest:
+    seed-key: dev-trust-key-001            # 启动时若库内无此 key 则自动注册（tenant=ws-default, project=p-2001）
+    queue-capacity: 50000
+    batch-size: 500
+    flush-interval-ms: 200
+    rate-limit-spans-per-minute: 20000     # 每 workspace spans 额度（令牌桶，超限 429+Retry-After）；0=不限
+  trace:
+    idle-timeout-ms: 900000                # RUNNING 超过该时长无新 span 判定完成（15 分钟）
+  sweeper:
+    interval-ms: 15000
+    batch-size: 100
+  event:
+    poll-interval-ms: 1000
+    poll-batch-size: 10
+    max-retry: 3
+    retry-backoff-ms: 60000
+  eval:
+    default-rate: 0.01                     # 自动评估采样比例；0=关闭
+    max-per-hour: 5000
+    max-attempt: 2
+    auto-run-enabled: true
+    llm:
+      protocol: openai                     # openai=/chat/completions；anthropic=/messages（Claude 原生协议）
+      base-url: ""                         # 端点根地址，可到 /v1 或完整 /chat/completions；空=LLM 不可用（评估标 EVAL_UNAVAILABLE）
+      api-key: ""
+      model: gpt-4o-mini
+      timeout-ms: 20000
+      max-attempts: 3                      # 瞬时错误（429/5xx/网络）重试次数；1=关闭
+      initial-backoff-ms: 500
+      max-backoff-ms: 5000
+      jitter: 0.3
+    cache-enabled: ${EMONLENS_EVAL_CACHE_ENABLED:false}   # LLM Judge 结果缓存；默认关闭
+    cache-ttl-hours: 168
+    cache-allow-stochastic: false          # temperature>0 是否允许缓存
+    cache-cleanup-cron: "0 10 3 * * *"
+  dataset-run:
+    max-items: 20                          # 每批样本上限（试点规模；不是统计门槛）
+    poll-interval-ms: 1000                 # 后台单线程轮询间隔
+    max-snapshot-chars: 50000              # 单条快照上限；超限拒绝或标为无法完整评估
+    pilot-mode: false                      # true 时旧同步入口停止接受新评测，仅允许 /runs/async
+    lease-seconds: 900                     # worker 租约；过期后旧 worker 不能刷新/完成
+    max-active-runs: 1                     # 数据库级并发活动 run 上限；>1 才允许多任务排队/并行
+    worker-threads: 1                      # 本实例 dataset-run worker 线程数；多实例部署按实例配置
+    max-active-runs-per-workspace: 0        # 单 workspace 并发上限；0 不额外限制
+  dataset-synthesis:
+    enabled: ${EMONLENS_DATASET_SYNTHESIS_ENABLED:false}   # 合成数据集；需要 LLM 端点已配置
+    worker-threads: 1
+    poll-interval-ms: 1000
+    max-candidates: 50                     # 单 job 候选上限
+    min-quality: 0.6                       # critic 默认阈值
+    max-retries: 2
+  metric:
+    scan-interval-ms: 60000                # Metric Monitor 扫描周期
+    baseline-windows: 6
+    sample-limit: 10000
+  push:
+    enabled: false                         # Webhook 回推（对外集成通道）
+    base-url: ""
+    secret: ""                             # HMAC-SHA256 共享密钥
+    timeout-ms: 5000
+  score:
+    recompute-interval-ms: 600000          # 评分兜底重算周期
+    window-hours: 24
+    weight-performance: 0.25
+    weight-behavior: 0.25
+    weight-output: 0.30
+    weight-security: 0.10
+    weight-context: 0.10
+  security:
+    jwt-secret: ""                         # JWT 签名密钥；空=dev 默认密钥（生产必须配置）
+    rate-limit-per-minute: 0               # 固定窗口限流；0=不限
+  content:
+    capture-mode: REDACTED                     # NONE/HASHED/REDACTED/FULL
+    max-content-length: 8192
+  otlp:
+    enabled: true                          # OTLP/HTTP-JSON 端点 /api/v1/ingest/otlp/v1/traces
+    max-body-chars: ${EMONLENS_OTLP_MAX_BODY_CHARS:33554432}   # 请求体字符上限，超出 400
+  retention:
+    span-days: 30
+    content-days: 7
+    event-days: 7
+    sweep-interval-ms: 3600000
+    batch-size: 5000
+  notify:
+    dispatch-enabled: true                 # 通知派发开关（事件认领消费）
+  storage:
+    mode: mysql                            # span_event 存储插件：mysql（默认）| starrocks（SpanEventStore SPI）
+    # starrocks:                           # mode=starrocks 时启用（建表见 sql/emonlens-starrocks.sql）
+    #   jdbc-url: jdbc:mysql://fe-host:9030/emonlens
+    #   username: root
+    #   password: ""
+  behavior:
+    max-consecutive-repeat: 3              # 相同 tool 连续重复达到该次数判定 Exact Repeat
+    min-cycle-repeat: 2                    # 循环节最少重复次数
+    max-steps: 50                          # 单 trace 步数超限判定 Budget Overrun
+
+logging:
+  level:
+    io.emonlens: INFO
+  # 配置 logging.file.name（prod 默认 /app/logs/emonlens.log）后启用文件滚动
+  logback:
+    rollingpolicy:
+      max-file-size: 100MB
+      max-history: 14
+      total-size-cap: 2GB
+      clean-history-on-start: true

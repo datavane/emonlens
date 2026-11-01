@@ -1,0 +1,36 @@
+# ============================================================================
+# EmonLens Spring 配置覆盖样例（可选）
+#
+# 用法：cp conf/application-prod.yml.example conf/application-prod.yml
+# 启动脚本以 --spring.config.additional-location=file:<APP_HOME>/conf/ 加载，
+# 因此该文件的优先级高于 jar 内置的 application.yml / application-prod.yml。
+#
+# 大多数运行参数用 conf/emonlens.env 里的环境变量即可；这里只放
+# 环境变量覆盖不到或建议显式固化的 Spring 级配置。
+# ============================================================================
+
+# 监听端口（也可用 EMONLENS_PORT）
+#server:
+#  port: 8300
+
+#spring:
+#  datasource:
+#    hikari:
+#      maximum-pool-size: 40
+#      connection-timeout: 10000
+
+#emonlens:
+#  # 单实例同时跑后台任务；独立 worker 部署时 api 实例设 false（同 EMONLENS_WORKER_ENABLED）
+#  worker:
+#    enabled: true
+#  # trace 完成判定：根 span 结束即完成；无根结束时按空闲超时收口
+#  trace:
+#    idle-timeout-ms: 900000
+#  # 信任分兜底重算周期与窗口
+#  score:
+#    recompute-interval-ms: 600000
+#    window-hours: 24
+
+#logging:
+#  level:
+#    io.emonlens: INFO

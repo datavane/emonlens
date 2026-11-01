@@ -1,0 +1,105 @@
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.1.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.1.0 http://maven.apache.org/xsd/assembly-2.1.0.xsd">
+    <id>bin</id>
+    <formats>
+        <format>tar.gz</format>
+    </formats>
+    <includeBaseDirectory>true</includeBaseDirectory>
+    <baseDirectory>emonlens-${project.version}</baseDirectory>
+
+    <files>
+        <file>
+            <source>${project.build.directory}/version/VERSION</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
+        <file>
+            <source>${project.basedir}/src/main/README.md</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
+    </files>
+
+    <fileSets>
+        <!-- 启动/停止脚本 -->
+        <fileSet>
+            <directory>${project.basedir}/src/main/bin</directory>
+            <outputDirectory>bin</outputDirectory>
+            <fileMode>0755</fileMode>
+            <lineEnding>unix</lineEnding>
+            <includes>
+                <include>*.sh</include>
+            </includes>
+        </fileSet>
+
+        <!-- 配置样例（emonlens.env.example / application-prod.yml.example，.example 后缀不会被 Spring 自动加载） -->
+        <fileSet>
+            <directory>${project.basedir}/src/main/conf</directory>
+            <outputDirectory>conf</outputDirectory>
+            <includes>
+                <include>*</include>
+            </includes>
+        </fileSet>
+
+        <!-- 建库 DDL + 种子 -->
+        <fileSet>
+            <directory>${project.parent.basedir}/emonlens-server/sql</directory>
+            <outputDirectory>sql</outputDirectory>
+            <includes>
+                <include>*.sql</include>
+                <include>migrations/*.sql</include>
+            </includes>
+        </fileSet>
+
+        <!-- Python SDK 分发件（make dist 会先执行 sdk-dist；不存在时 assembly 跳过并告警） -->
+        <fileSet>
+            <directory>${project.parent.basedir}/emonlens-sdk-python/dist</directory>
+            <outputDirectory>sdk</outputDirectory>
+            <includes>
+                <include>*.whl</include>
+                <include>*.tar.gz</include>
+            </includes>
+        </fileSet>
+
+        <!-- 发布验收脚本：tar.gz 部署后可直接执行 smoke / verify -->
+        <fileSet>
+            <directory>${project.parent.basedir}/scripts</directory>
+            <outputDirectory>scripts</outputDirectory>
+            <fileMode>0755</fileMode>
+            <lineEnding>unix</lineEnding>
+            <includes>
+                <include>smoke.sh</include>
+                <include>verify_all.py</include>
+            </includes>
+        </fileSet>
+
+        <!-- 许可证随包分发，满足 Apache-2.0 再分发要求 -->
+        <fileSet>
+            <directory>${project.parent.basedir}</directory>
+            <outputDirectory>.</outputDirectory>
+            <includes>
+                <include>LICENSE</include>
+            </includes>
+        </fileSet>
+
+        <!-- 操作手册随包分发便于离线查阅；设计文档由维护者内部维护，不随包分发 -->
+        <fileSet>
+            <directory>${project.parent.basedir}/docs</directory>
+            <outputDirectory>docs</outputDirectory>
+            <includes>
+                <include>*.md</include>
+            </includes>
+        </fileSet>
+    </fileSets>
+
+    <dependencySets>
+        <!-- 只取 server 的 Spring Boot fat jar，不展开传递依赖 -->
+        <dependencySet>
+            <outputDirectory>lib</outputDirectory>
+            <useProjectArtifact>false</useProjectArtifact>
+            <useTransitiveDependencies>false</useTransitiveDependencies>
+            <includes>
+                <include>io.emonlens:emonlens-server</include>
+            </includes>
+        </dependencySet>
+    </dependencySets>
+</assembly>
